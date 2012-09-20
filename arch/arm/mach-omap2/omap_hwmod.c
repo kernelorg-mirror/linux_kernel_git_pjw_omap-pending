@@ -685,8 +685,8 @@ static int _init_main_clk(struct omap_hwmod *oh)
 	}
 
 	if (!oh->_clk->clkdm)
-		pr_warning("omap_hwmod: %s: missing clockdomain for %s.\n",
-			   oh->main_clk, oh->_clk->name);
+		pr_debug("omap_hwmod: %s: missing clockdomain for %s.\n",
+			 oh->main_clk, oh->_clk->name);
 
 	return ret;
 }
@@ -1380,8 +1380,10 @@ static struct omap_hwmod *_lookup(const char *name)
  */
 static int _init_clkdm(struct omap_hwmod *oh)
 {
-	if (!oh->clkdm_name)
+	if (!oh->clkdm_name) {
+		pr_debug("omap_hwmod: %s: missing clockdomain\n", oh->name);
 		return 0;
+	}
 
 	oh->clkdm = clkdm_lookup(oh->clkdm_name);
 	if (!oh->clkdm) {
