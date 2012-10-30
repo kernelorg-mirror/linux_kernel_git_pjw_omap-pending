@@ -33,6 +33,7 @@
 #include "soc.h"
 #include "clockdomain.h"
 #include "clock.h"
+#include "cm.h"
 #include "cm2xxx.h"
 #include "cm3xxx.h"
 #include "cm-regbits-24xx.h"
@@ -71,7 +72,9 @@ static DEFINE_SPINLOCK(clockfw_lock);
 static void _omap2_module_wait_ready(struct clk *clk)
 {
 	void __iomem *companion_reg, *idlest_reg;
-	u8 other_bit, idlest_bit, idlest_val;
+	u8 other_bit, idlest_bit, idlest_val, idlest_reg_id;
+	s16 prcm_mod;
+	int r;
 
 	/* Not all modules have multiple clocks that their IDLEST depends on */
 	if (clk->ops->find_companion) {
@@ -82,8 +85,13 @@ static void _omap2_module_wait_ready(struct clk *clk)
 
 	clk->ops->find_idlest(clk, &idlest_reg, &idlest_bit, &idlest_val);
 
-	omap2_cm_wait_idlest(idlest_reg, (1 << idlest_bit), idlest_val,
-			     __clk_get_name(clk));
+	r = cm_split_idlest_reg(idlest_reg, &prcm_mod, &idlest_reg_id);
+	if (r) {
+		pr_err("clock: %s: could not split idlest reg va\n", clk->name);
+		return;
+	}
+
+	cm_wait_module_ready(prcm_mod, idlest_reg_id, idlest_bit);
 }
 
 /* Public functions */
